@@ -4022,12 +4022,12 @@ function renderAttritionTable() {
     if (!subKey) continue;
     const gk = `${dept}||${subKey}`;
     if (!groups[gk]) groups[gk] = { dept, subdept: subKey, monthData: {} };
-    if (!groups[gk].monthData[mnyr]) groups[gk].monthData[mnyr] = { sep:0, open:0, active:0, empSep:[] };
+    if (!groups[gk].monthData[mnyr]) groups[gk].monthData[mnyr] = { sep:0, open:0, active:0, empSep:[], activeIds:new Set() };
     const md = groups[gk].monthData[mnyr];
     const emp = { name:(r['Emp Name']||r['Employee Name']||empid).trim(), id:empid };
-    if (s === STATUS_ACTIVE)      { md.open++; md.active++; }
-    else if (s === STATUS_NEW_HIRE) md.active++;
-    else if (isAttrition(s))       { md.sep++; md.empSep.push(emp); }
+    if (s === STATUS_ACTIVE)        { md.open++; md.active++; md.activeIds.add(empid); }
+    else if (s === STATUS_NEW_HIRE) { md.active++; md.activeIds.add(empid); }
+    else if (isAttrition(s))        { md.sep++; md.empSep.push(emp); }
   }
 
 
@@ -4138,14 +4138,17 @@ function renderAttritionTable() {
       const d = monthData[m];
       if (!d) return;
       sep += d.sep || 0;
-      // Count all employees who were active (open or close) in any month
-      (d.empOpen  ||[]).forEach(e => uniqueActive.add(e.id));
-      (d.empClose ||[]).forEach(e => uniqueActive.add(e.id));
-      (d.empNH    ||[]).forEach(e => uniqueActive.add(e.id));
+      // Use activeIds Set if available (attrition table)
+      if (d.activeIds instanceof Set) {
+        d.activeIds.forEach(id => uniqueActive.add(id));
+      } else {
+        // Fallback: use empOpen/empClose/empNH arrays (headcount matrix)
+        (d.empOpen  ||[]).forEach(e => uniqueActive.add(e.id));
+        (d.empClose ||[]).forEach(e => uniqueActive.add(e.id));
+        (d.empNH    ||[]).forEach(e => uniqueActive.add(e.id));
+      }
     });
     const uniqueCount = uniqueActive.size;
-    // Use uniqueCount as both open and active so (open+active)/2 = uniqueCount in rate()
-    // and vAvg displays uniqueCount correctly
     return { sep, open: uniqueCount, active: uniqueCount, cnt: mList.filter(m=>monthData[m]).length, uniqueCount };
   };
 
