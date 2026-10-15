@@ -4058,16 +4058,23 @@ function renderAttritionTable() {
     const border  = 'border-right:3px solid #5000B3;';
     th1 += `<th colspan="${colspan}" style="${bg}${border}color:#5000B3;font-size:11px;font-weight:700;">${yearLabel(yr)}</th>`;
   });
-  // Monthly columns — inject FY block after last month of each concluded year
+  // Monthly columns — inject FY block BEFORE first month of each concluded year (descending order)
   const monthsSorted = [...months]; // already sorted desc
-  let prevYr = null;
   monthsSorted.forEach((m, mi) => {
-    const mYr = parseMonthYear(m).yr;
+    const mYr   = parseMonthYear(m).yr;
+    const prevYr = mi > 0 ? parseMonthYear(monthsSorted[mi-1]).yr : null;
     const isLast = mi === monthsSorted.length - 1;
-    th1 += `<th colspan="3" style="${isLast ? '' : mYr !== (monthsSorted[mi+1] ? parseMonthYear(monthsSorted[mi+1]).yr : mYr) ? 'border-right:3px solid #5000B3;' : 'border-right:2px solid #444'}">${m}</th>`;
-    // After last month of a concluded year, inject FY block
+    // Inject FY block when year changes (before first month of concluded year in descending order)
+    if (prevYr && prevYr !== mYr && mYr !== nowYear) {
+      const bg     = 'background:#f0f0f8;';
+      const border = 'border-right:3px solid #5000B3;';
+      th1 += `<th colspan="4" style="${bg}${border}color:#5000B3;font-size:11px;font-weight:700;">${yearLabel(prevYr)}</th>`;
+    }
     const nextYr = mi < monthsSorted.length-1 ? parseMonthYear(monthsSorted[mi+1]).yr : null;
-    if (mYr !== nowYear && mYr !== nextYr) {
+    const isYrStart = prevYr && prevYr !== mYr;
+    th1 += `<th colspan="3" style="${isLast ? '' : mYr !== nextYr ? 'border-right:2px solid #444;' : 'border-right:2px solid #444'}">${m}</th>`;
+    // After very last month of final concluded year, inject its FY block
+    if (!nextYr && mYr !== nowYear) {
       const bg     = 'background:#f0f0f8;';
       const border = 'border-right:3px solid #5000B3;';
       th1 += `<th colspan="4" style="${bg}${border}color:#5000B3;font-size:11px;font-weight:700;">${yearLabel(mYr)}</th>`;
@@ -4084,16 +4091,25 @@ function renderAttritionTable() {
     th2 += `<th class="sub-rate" style="${ytdSubBg}color:#5000B3;">Rate%</th>`;
     th2 += `<th class="sub-rate" style="${ytdSubBg}color:#5000B3;border-right:3px solid #5000B3;">Ann%</th>`;
   });
-  // Monthly sub-cols — inject FY sub-cols after last month of each concluded year
+  // Monthly sub-cols — inject FY sub-cols BEFORE first month of each concluded year
   monthsSorted.forEach((m, mi) => {
-    const mYr = parseMonthYear(m).yr;
+    const mYr  = parseMonthYear(m).yr;
+    const prevYr = mi > 0 ? parseMonthYear(monthsSorted[mi-1]).yr : null;
     const isLast = mi === monthsSorted.length-1;
     const nextYr = mi < monthsSorted.length-1 ? parseMonthYear(monthsSorted[mi+1]).yr : null;
-    const mIsYrEnd = mYr !== nowYear && mYr !== nextYr;
+    // Inject FY sub-cols before first month of concluded year
+    if (prevYr && prevYr !== mYr && mYr !== nowYear) {
+      const fySubBg = 'background:#f0eefa;';
+      th2 += `<th class="sub-attr" style="${fySubBg}color:#5000B3;">Sep</th>`;
+      th2 += `<th class="sub-open" style="${fySubBg}color:#5000B3;">Avg HC</th>`;
+      th2 += `<th class="sub-rate" style="${fySubBg}color:#5000B3;">Rate%</th>`;
+      th2 += `<th class="sub-rate" style="${fySubBg}color:#5000B3;border-right:3px solid #5000B3;">Ann%</th>`;
+    }
     th2 += `<th class="sub-attr">Sep</th>`;
     th2 += `<th class="sub-open">Avg HC</th>`;
-    th2 += `<th class="sub-rate${mIsYrEnd ? '' : isLast ? '' : ' month-end'}">Rate %</th>`;
-    if (mIsYrEnd) {
+    th2 += `<th class="sub-rate${isLast ? '' : ' month-end'}">Rate %</th>`;
+    // After very last month of final concluded year
+    if (!nextYr && mYr !== nowYear) {
       const fySubBg = 'background:#f0eefa;';
       th2 += `<th class="sub-attr" style="${fySubBg}color:#5000B3;">Sep</th>`;
       th2 += `<th class="sub-open" style="${fySubBg}color:#5000B3;">Avg HC</th>`;
@@ -4219,10 +4235,12 @@ function renderAttritionTable() {
     tbody += renderYTDCells(deptTotals);
     monthsSorted.forEach((m,mi) => {
       const dt=deptTotals[m]||{sep:0,open:0,active:0}; const r=rate(dt.sep,dt.open,dt.active);
-      const mYr=parseMonthYear(m).yr; const nextYr=mi<monthsSorted.length-1?parseMonthYear(monthsSorted[mi+1]).yr:null;
-      const mIsYrEnd=mYr!==nowYear&&mYr!==nextYr;
-      tbody += `<td class="num">${vSep(dt.sep)}</td><td class="num">${vAvg(dt.open||0,dt.active)}</td><td class="num${mIsYrEnd?'':' month-end'}">${vRate(r)}</td>`;
-      if (mIsYrEnd) tbody += renderFYCells(mYr, deptTotals);
+      const mYr=parseMonthYear(m).yr;
+      const prevYr=mi>0?parseMonthYear(monthsSorted[mi-1]).yr:null;
+      const nextYr=mi<monthsSorted.length-1?parseMonthYear(monthsSorted[mi+1]).yr:null;
+      if (prevYr && prevYr!==mYr && mYr!==nowYear) tbody += renderFYCells(prevYr, deptTotals);
+      tbody += `<td class="num">${vSep(dt.sep)}</td><td class="num">${vAvg(dt.open||0,dt.active)}</td><td class="num${nextYr&&nextYr!==mYr?'':' month-end'}">${vRate(r)}</td>`;
+      if (!nextYr && mYr!==nowYear) tbody += renderFYCells(mYr, deptTotals);
     });
     tbody += `</tr>`;
     const dRow=[dept,'(Total)']; monthsSorted.forEach(m=>{const dt=deptTotals[m]||{};dRow.push(dt.sep,dt.active,rate(dt.sep,dt.open,dt.active));}); attrExportBuffer.push(dRow);
@@ -4232,12 +4250,14 @@ function renderAttritionTable() {
       tbody += renderYTDCells(g.monthData);
       monthsSorted.forEach((m,mi) => {
         const md=g.monthData[m]||{sep:0,open:0,active:0,empSep:[]}; const r=rate(md.sep,md.open,md.active);
-        const mYr=parseMonthYear(m).yr; const nextYr=mi<monthsSorted.length-1?parseMonthYear(monthsSorted[mi+1]).yr:null;
-        const mIsYrEnd=mYr!==nowYear&&mYr!==nextYr;
+        const mYr=parseMonthYear(m).yr;
+        const prevYr=mi>0?parseMonthYear(monthsSorted[mi-1]).yr:null;
+        const nextYr=mi<monthsSorted.length-1?parseMonthYear(monthsSorted[mi+1]).yr:null;
+        if (prevYr && prevYr!==mYr && mYr!==nowYear) tbody += renderFYCells(prevYr, g.monthData);
         const kS = `attrDept::${dept}::${g.subdept}::${m}::sep`;
         storeDetail(kS, (md.empSep||[]).map(e=>({name:e.name,id:e.id})), `Separations — ${dept} · ${g.subdept}`, m);
-        tbody += `${clickableCell(kS,vSep(md.sep))}<td class="num">${vAvg(md.open||0,md.active)}</td><td class="num${mIsYrEnd?'':' month-end'}">${vRate(r)}</td>`;
-        if (mIsYrEnd) tbody += renderFYCells(mYr, g.monthData);
+        tbody += `${clickableCell(kS,vSep(md.sep))}<td class="num">${vAvg(md.open||0,md.active)}</td><td class="num${nextYr&&nextYr!==mYr?'':' month-end'}">${vRate(r)}</td>`;
+        if (!nextYr && mYr!==nowYear) tbody += renderFYCells(mYr, g.monthData);
       });
       tbody += `</tr>`;
       const sRow=[dept,g.subdept]; monthsSorted.forEach(m=>{const md=g.monthData[m]||{};sRow.push(md.sep,md.active,rate(md.sep,md.open,md.active));}); attrExportBuffer.push(sRow);
@@ -4272,15 +4292,17 @@ function renderAttritionTable() {
   tbody += renderYTDCells({}, true, dedupByYear);
   monthsSorted.forEach((m,mi) => {
     const dt=dedupTotals[m]||{sep:0,open:0,close:0}; const r=rate(dt.sep,dt.open,dt.close);
-    const mYr=parseMonthYear(m).yr; const nextYr=mi<monthsSorted.length-1?parseMonthYear(monthsSorted[mi+1]).yr:null;
-    const mIsYrEnd=mYr!==nowYear&&mYr!==nextYr;
-    tbody += `<td class="num"><strong class="v-attr">${dt.sep||''}</strong></td><td class="num"><strong class="v-nh">${Math.round((dt.open+dt.close)/2)||''}</strong></td><td class="num${mIsYrEnd?'':' month-end'}"><strong class="v-rate">${r}</strong></td>`;
-    if (mIsYrEnd) tbody += renderFYCells(mYr, {}, true, dedupByYear);
+    const mYr=parseMonthYear(m).yr;
+    const prevYr=mi>0?parseMonthYear(monthsSorted[mi-1]).yr:null;
+    const nextYr=mi<monthsSorted.length-1?parseMonthYear(monthsSorted[mi+1]).yr:null;
+    if (prevYr && prevYr!==mYr && mYr!==nowYear) tbody += renderFYCells(prevYr, {}, true, dedupByYear);
+    tbody += `<td class="num"><strong class="v-attr">${dt.sep||''}</strong></td><td class="num"><strong class="v-nh">${Math.round((dt.open+dt.close)/2)||''}</strong></td><td class="num${nextYr&&nextYr!==mYr?'':' month-end'}"><strong class="v-rate">${r}</strong></td>`;
+    if (!nextYr && mYr!==nowYear) tbody += renderFYCells(mYr, {}, true, dedupByYear);
   });
   tbody += `</tr>`;
 
   // Annualized Attrition Rate row
-  tbody += `<tr style="background:var(--purple);"><td class="col-label" style="color:#fff;font-weight:700;font-size:11px;letter-spacing:0.4px;text-transform:uppercase;">Annualized Rate <span style="font-size:9px;font-weight:400;opacity:0.7;">(blended avg × 12)</span></td>`;
+  tbody += `<tr style="background:var(--purple);"><td class="col-label" style="color:#fff;font-weight:700;font-size:11px;letter-spacing:0.4px;text-transform:uppercase;">Annualized Rate <span style="font-size:9px;font-weight:400;opacity:0.7;">(avg of monthly Rate × 12)</span></td>`;
   // YTD annualized
   ytdYears.forEach(yr => {
     const ann = annRateDedup(dedupByYear, yr);
@@ -4292,11 +4314,17 @@ function renderAttritionTable() {
     const dt=dedupTotals[m]||{sep:0,open:0,close:0};
     const avg=(dt.open+dt.close)/2;
     const ann=avg>0?((dt.sep/avg)*12*100).toFixed(1)+'%':'';
-    const mYr=parseMonthYear(m).yr; const nextYr=mi<monthsSorted.length-1?parseMonthYear(monthsSorted[mi+1]).yr:null;
-    const mIsYrEnd=mYr!==nowYear&&mYr!==nextYr;
-    tbody += `<td class="num" colspan="2"></td><td class="num${mIsYrEnd?'':' month-end'}" style="text-align:center;"><strong style="color:#fff;font-size:12px;">${ann}</strong></td>`;
-    if (mIsYrEnd) {
-      const fa2 = annRateDedup(dedupByYear, mYr);
+    const mYr=parseMonthYear(m).yr;
+    const prevYr=mi>0?parseMonthYear(monthsSorted[mi-1]).yr:null;
+    const nextYr=mi<monthsSorted.length-1?parseMonthYear(monthsSorted[mi+1]).yr:null;
+    if (prevYr && prevYr!==mYr && mYr!==nowYear) {
+      const fa2=annRateDedup(dedupByYear,prevYr);
+      tbody += `<td class="num" colspan="3" style="background:#261545;border-right:3px solid #5000B3;"></td>`;
+      tbody += `<td class="num" style="background:#261545;border-right:3px solid #5000B3;text-align:center;"><strong style="color:#e9d5ff;font-size:12px;">${fa2}</strong></td>`;
+    }
+    tbody += `<td class="num" colspan="2"></td><td class="num${nextYr&&nextYr!==mYr?'':' month-end'}" style="text-align:center;"><strong style="color:#fff;font-size:12px;">${ann}</strong></td>`;
+    if (!nextYr && mYr!==nowYear) {
+      const fa2=annRateDedup(dedupByYear,mYr);
       tbody += `<td class="num" colspan="3" style="background:#261545;border-right:3px solid #5000B3;"></td>`;
       tbody += `<td class="num" style="background:#261545;border-right:3px solid #5000B3;text-align:center;"><strong style="color:#e9d5ff;font-size:12px;">${fa2}</strong></td>`;
     }
@@ -4482,14 +4510,20 @@ function exportAttritionRate() {
   // We need the same monthData used during render — re-derive from attrExportBuffer
   // Easier: rebuild headers and re-export with YTD/FY computed from existing buffer rows
 
-  // Header: YTD first, then monthly with FY injected after last month of each year
+  // Header: YTD first, then monthly with FY injected BEFORE first month of each concluded year
   const ytdHdrs = ytdYears.flatMap(yr => [`YTD ${yr} Sep`, `YTD ${yr} Avg HC`, `YTD ${yr} Rate%`, `YTD ${yr} Ann%`]);
   const monthHdrs = [];
   months.forEach((m,mi) => {
-    const mYr = parseMonthYear(m);
+    const mYr  = parseMonthYear(m);
+    const prevYr = mi > 0 ? parseMonthYear(months[mi-1]) : null;
     const nextYr = mi < months.length-1 ? parseMonthYear(months[mi+1]) : null;
+    // Inject FY block before first month of each concluded year
+    if (prevYr && prevYr !== mYr && mYr !== nowYear) {
+      monthHdrs.push(`FY ${prevYr} Sep`, `FY ${prevYr} Avg HC`, `FY ${prevYr} Rate%`, `FY ${prevYr} Ann%`);
+    }
     monthHdrs.push(`${m} Sep`, `${m} Avg HC`, `${m} Rate%`);
-    if (mYr !== nowYear && mYr !== nextYr) {
+    // After very last month of final concluded year
+    if (!nextYr && mYr !== nowYear) {
       monthHdrs.push(`FY ${mYr} Sep`, `FY ${mYr} Avg HC`, `FY ${mYr} Rate%`, `FY ${mYr} Ann%`);
     }
   });
@@ -4516,20 +4550,34 @@ function exportAttritionRate() {
       return [totalSep||'', avgHC ? avgHC.toFixed(1) : '', rateVal, annVal];
     });
 
-    // Monthly + FY injection
+    // Monthly + FY injection — same order as table (FY before first month of concluded year)
     const monthlyCols = [];
     months.forEach((m,mi) => {
       const d = monthlyData[m];
-      const mYr = parseMonthYear(m);
+      const mYr  = parseMonthYear(m);
+      const prevYr = mi > 0 ? parseMonthYear(months[mi-1]) : null;
       const nextYr = mi < months.length-1 ? parseMonthYear(months[mi+1]) : null;
+      // Inject FY before first month of concluded year
+      if (prevYr && prevYr !== mYr && mYr !== nowYear) {
+        const yMonths = monthsByYear[prevYr];
+        const totalSep = yMonths.reduce((s,m2)=>s+(monthlyData[m2]?.sep||0),0);
+        const avgHCArr = yMonths.map(m2=>monthlyData[m2]?.avgHC||0).filter(v=>v>0);
+        const avgHC    = avgHCArr.length ? avgHCArr.reduce((s,v)=>s+v,0)/avgHCArr.length : 0;
+        const rateVal  = avgHC>0 ? ((totalSep/avgHC)*100).toFixed(1)+'%' : '';
+        const annArr   = yMonths.map(m2=>{ const md=monthlyData[m2]; if(!md||!md.avgHC) return null; return (md.sep/md.avgHC)*12*100; }).filter(v=>v!==null);
+        const annVal   = annArr.length ? (annArr.reduce((s,v)=>s+v,0)/annArr.length).toFixed(1)+'%' : '';
+        monthlyCols.push(totalSep||'', avgHC ? avgHC.toFixed(1) : '', rateVal, annVal);
+      }
       monthlyCols.push(d.sep||'', d.avgHC||'', d.rate||'');
-      if (mYr !== nowYear && mYr !== nextYr) {
+      // After very last month of final concluded year
+      if (!nextYr && mYr !== nowYear) {
         const yMonths = monthsByYear[mYr];
         const totalSep = yMonths.reduce((s,m2)=>s+(monthlyData[m2]?.sep||0),0);
         const avgHCArr = yMonths.map(m2=>monthlyData[m2]?.avgHC||0).filter(v=>v>0);
         const avgHC    = avgHCArr.length ? avgHCArr.reduce((s,v)=>s+v,0)/avgHCArr.length : 0;
-        const rateVal  = avgHC > 0 ? ((totalSep/avgHC)*100).toFixed(1)+'%' : '';
-        const annVal   = avgHC > 0 && avgHCArr.length > 0 ? ((totalSep/avgHC)*(12/avgHCArr.length)*100).toFixed(1)+'%' : '';
+        const rateVal  = avgHC>0 ? ((totalSep/avgHC)*100).toFixed(1)+'%' : '';
+        const annArr   = yMonths.map(m2=>{ const md=monthlyData[m2]; if(!md||!md.avgHC) return null; return (md.sep/md.avgHC)*12*100; }).filter(v=>v!==null);
+        const annVal   = annArr.length ? (annArr.reduce((s,v)=>s+v,0)/annArr.length).toFixed(1)+'%' : '';
         monthlyCols.push(totalSep||'', avgHC ? avgHC.toFixed(1) : '', rateVal, annVal);
       }
     });
