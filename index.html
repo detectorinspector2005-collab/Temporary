@@ -4034,42 +4034,49 @@ function renderAttritionTable() {
     const avg = (open + close) / 2;
     return avg > 0 ? ((sep / avg) * 100).toFixed(1) + '%' : '';
   };
-  // annRate: average of monthly rates × 12 — consistent with the monthly annualized footer row
+  // annRate: (total sep / avg of monthly Avg HCs) × (12 / months)
   const annRate = (monthData, mList) => {
-    const rates = mList.map(m => {
+    const activeM = mList.filter(m => monthData[m]);
+    if (!activeM.length) return '';
+    let totalSep = 0, avgHCSum = 0;
+    activeM.forEach(m => {
       const d = monthData[m];
-      if (!d) return null;
-      const avg = (d.open + d.active) / 2;
-      return avg > 0 ? (d.sep / avg) : null;
-    }).filter(r => r !== null);
-    if (!rates.length) return '';
-    const avgRate = rates.reduce((s,r)=>s+r,0) / rates.length;
-    return (avgRate * 12 * 100).toFixed(1) + '%';
+      totalSep += d.sep || 0;
+      avgHCSum += (d.open + d.active) / 2;
+    });
+    const avgHC = avgHCSum / activeM.length;
+    if (!avgHC) return '';
+    return ((totalSep / avgHC) * (12 / activeM.length) * 100).toFixed(1) + '%';
   };
 
-  // annRateDedup: same but for deduplicated grand total data per year
+  // annRateDedup: (total sep / avg monthly Avg HC) × (12 / months)
   const annRateDedup = (dedupByYear, yr) => {
-    const yMonths = monthsByYear[yr];
-    const rates = yMonths.map(m => {
-      const dt = dedupTotals[m];
-      if (!dt) return null;
-      const avg = (dt.open + dt.close) / 2;
-      return avg > 0 ? (dt.sep / avg) : null;
-    }).filter(r => r !== null);
-    if (!rates.length) return '';
-    const avgRate = rates.reduce((s,r)=>s+r,0) / rates.length;
-    return (avgRate * 12 * 100).toFixed(1) + '%';
+    const d = dedupByYear[yr];
+    if (!d || !d.cnt) return '';
+    const avgHC = (d.open + d.close) / 2; // open=close=avgHC so this returns avgHC
+    if (!avgHC) return '';
+    return ((d.sep / avgHC) * (12 / d.cnt) * 100).toFixed(1) + '%';
   };
   const vSep  = n => n ? `<span class="v-attr">-${n}</span>` : '';
   const vAvg  = (open, close) => { const avg=(open+close)/2; return avg>0?`<span class="v-nh">${avg%1===0?avg:avg.toFixed(1)}</span>`:''; };
   const vRate = r => r ? `<span class="v-rate">${r}</span>` : '';
   const vAnn  = r => r ? `<span style="color:#a78bfa;font-weight:700;">${r}</span>` : '';
 
-  // Helper: sum monthData over a set of months for a group/dept
+  // Helper: aggregate monthData over a set of months for a group/dept
+  // Avg HC = average of monthly Avg HCs — most consistent with individual monthly columns
   const sumMonths = (monthData, mList) => {
-    let sep=0, open=0, active=0;
-    mList.forEach(m => { const d=monthData[m]||{sep:0,open:0,active:0}; sep+=d.sep; open+=d.open; active+=d.active; });
-    return { sep, open, active, cnt: mList.filter(m=>(monthData[m]?.sep||0)+(monthData[m]?.open||0)+(monthData[m]?.active||0)>0).length };
+    let sep = 0, avgHCSum = 0, cnt = 0;
+    mList.forEach(m => {
+      const d = monthData[m];
+      if (!d) return;
+      sep += d.sep || 0;
+      const mAvg = (d.open + d.active) / 2;
+      avgHCSum += mAvg;
+      cnt++;
+    });
+    const avgHC = cnt > 0 ? avgHCSum / cnt : 0;
+    // set open=avgHC, active=avgHC so (open+active)/2 = avgHC in rate()
+    return { sep, open: avgHC, active: avgHC, cnt };
   };
 
   // Render YTD cells (current year only — leftmost)
@@ -4175,13 +4182,17 @@ function renderAttritionTable() {
   const dedupByYear = {};
   allYears.forEach(yr => {
     const yMonths = monthsByYear[yr];
-    let sep=0, open=0, close=0, cnt=0;
+    let sep = 0, avgHCSum = 0, cnt = 0;
     yMonths.forEach(m => {
-      const dt=dedupTotals[m]||{sep:0,open:0,close:0};
-      sep+=dt.sep; open+=dt.open; close+=dt.close;
-      if (dt.sep||dt.open||dt.close) cnt++;
+      const dt = dedupTotals[m];
+      if (!dt) return;
+      sep += dt.sep || 0;
+      avgHCSum += (dt.open + dt.close) / 2;
+      cnt++;
     });
-    dedupByYear[yr]={sep,open,close,cnt:cnt||yMonths.length};
+    const avgHC = cnt > 0 ? avgHCSum / cnt : 0;
+    // open=avgHC, close=avgHC so (open+close)/2 = avgHC in rate()
+    dedupByYear[yr] = { sep, open: avgHC, close: avgHC, cnt };
   });
 
   tbody += `<tr class="total-row"><td class="col-label">GRAND TOTAL</td>`;
@@ -4384,11 +4395,76 @@ function exportHeadcountMatrix() {
 
 // 6. Attrition Rate — attrExportBuffer: Dept, SubDept, Sep, AvgHC, Rate per month
 function exportAttritionRate() {
-  if(!attrExportBuffer.length) return;
-  const months=sortMonths([...new Set(filteredData.map(r=>r['Mn/Yr']).filter(Boolean))]).reverse();
-  const subHdrs=months.flatMap(m=>[`${m} Separations`,`${m} Avg HC`,`${m} Rate %`]);
-  const headers=['Department','Sub-Department',...subHdrs];
-  triggerCSVDownload('Attrition_Rate',headers,attrExportBuffer);
+  if (!attrExportBuffer.length) return;
+
+  const months    = sortMonths([...new Set(filteredData.map(r=>r['Mn/Yr']).filter(Boolean))]).reverse();
+  const nowYear   = String(new Date().getFullYear());
+  const parseMonthYear = m => { const [mo,yr]=m.split(" '"); return '20'+yr; };
+  const allYears  = [...new Set(months.map(m=>parseMonthYear(m)))].sort();
+  const ytdYears  = allYears.filter(yr=>yr===nowYear);
+  const monthsByYear = {};
+  allYears.forEach(yr => { monthsByYear[yr]=sortMonths(months.filter(m=>parseMonthYear(m)===yr)); });
+
+  // Rebuild data rows with YTD/FY columns included
+  // We need the same monthData used during render — re-derive from attrExportBuffer
+  // Easier: rebuild headers and re-export with YTD/FY computed from existing buffer rows
+
+  // Header: YTD first, then monthly with FY injected after last month of each year
+  const ytdHdrs = ytdYears.flatMap(yr => [`YTD ${yr} Sep`, `YTD ${yr} Avg HC`, `YTD ${yr} Rate%`, `YTD ${yr} Ann%`]);
+  const monthHdrs = [];
+  months.forEach((m,mi) => {
+    const mYr = parseMonthYear(m);
+    const nextYr = mi < months.length-1 ? parseMonthYear(months[mi+1]) : null;
+    monthHdrs.push(`${m} Sep`, `${m} Avg HC`, `${m} Rate%`);
+    if (mYr !== nowYear && mYr !== nextYr) {
+      monthHdrs.push(`FY ${mYr} Sep`, `FY ${mYr} Avg HC`, `FY ${mYr} Rate%`, `FY ${mYr} Ann%`);
+    }
+  });
+  const headers = ['Department', 'Sub-Department', ...ytdHdrs, ...monthHdrs];
+
+  // Rebuild rows: each attrExportBuffer row has [dept, subdept, ...monthly sep/avgHC/rate]
+  // Re-compute YTD/FY from the monthly values already in the buffer
+  const exportRows = attrExportBuffer.map(row => {
+    const dept = row[0], sub = row[1];
+    const monthlyData = {}; // m → { sep, avgHC, rate }
+    months.forEach((m, mi) => {
+      const base = 2 + mi * 3;
+      monthlyData[m] = { sep: row[base]||0, avgHC: row[base+1]||0, rate: row[base+2]||'' };
+    });
+
+    // YTD columns
+    const ytdCols = ytdYears.flatMap(yr => {
+      const yMonths = monthsByYear[yr];
+      const totalSep   = yMonths.reduce((s,m)=>s+(monthlyData[m]?.sep||0),0);
+      const avgHCArr   = yMonths.map(m=>monthlyData[m]?.avgHC||0).filter(v=>v>0);
+      const avgHC      = avgHCArr.length ? avgHCArr.reduce((s,v)=>s+v,0)/avgHCArr.length : 0;
+      const rateVal    = avgHC > 0 ? ((totalSep/avgHC)*100).toFixed(1)+'%' : '';
+      const annVal     = avgHC > 0 && avgHCArr.length > 0 ? ((totalSep/avgHC)*(12/avgHCArr.length)*100).toFixed(1)+'%' : '';
+      return [totalSep||'', avgHC ? avgHC.toFixed(1) : '', rateVal, annVal];
+    });
+
+    // Monthly + FY injection
+    const monthlyCols = [];
+    months.forEach((m,mi) => {
+      const d = monthlyData[m];
+      const mYr = parseMonthYear(m);
+      const nextYr = mi < months.length-1 ? parseMonthYear(months[mi+1]) : null;
+      monthlyCols.push(d.sep||'', d.avgHC||'', d.rate||'');
+      if (mYr !== nowYear && mYr !== nextYr) {
+        const yMonths = monthsByYear[mYr];
+        const totalSep = yMonths.reduce((s,m2)=>s+(monthlyData[m2]?.sep||0),0);
+        const avgHCArr = yMonths.map(m2=>monthlyData[m2]?.avgHC||0).filter(v=>v>0);
+        const avgHC    = avgHCArr.length ? avgHCArr.reduce((s,v)=>s+v,0)/avgHCArr.length : 0;
+        const rateVal  = avgHC > 0 ? ((totalSep/avgHC)*100).toFixed(1)+'%' : '';
+        const annVal   = avgHC > 0 && avgHCArr.length > 0 ? ((totalSep/avgHC)*(12/avgHCArr.length)*100).toFixed(1)+'%' : '';
+        monthlyCols.push(totalSep||'', avgHC ? avgHC.toFixed(1) : '', rateVal, annVal);
+      }
+    });
+
+    return [dept, sub, ...ytdCols, ...monthlyCols];
+  });
+
+  triggerCSVDownload('Attrition_Rate', headers, exportRows);
 }
 function exportMovementHistory() {
   const wrapper = document.getElementById('mvt-timeline-wrapper');
