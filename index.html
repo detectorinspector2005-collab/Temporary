@@ -600,7 +600,78 @@
         <span class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span><span style="color:#94a3b8">Avg HC</span></span>
         <span class="legend-item"><span class="legend-dot" style="background:var(--black)"></span><span style="color:var(--black)">Attrition Rate</span></span>
       </div>
-      <div style="font-size:11px;color:#94a3b8;background:white;border:1px solid #e4dfd9;border-radius:8px;padding:8px 14px;margin-bottom:10px;line-height:1.7;"><strong>Sep</strong> = number of separations &nbsp;·&nbsp; <strong>Avg HC</strong> = (unique employees at month start + unique employees at month end) ÷ 2 &nbsp;·&nbsp; <strong>Rate %</strong> = Sep ÷ Avg HC × 100 &nbsp;·&nbsp; <strong>Annualized</strong> = monthly Rate × 12</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center;">
+        <span style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.5px;margin-right:2px;">Formula guide</span>
+
+        <span class="info-icon" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--gray-600);font-weight:600;width:auto;margin-left:0;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Sep
+          <span class="info-tip" style="width:240px;">
+            <strong>Separations</strong> — count of employees whose status changed to any attrition tag (Resigned, Terminated, AWOL, etc.) in that month. Each employee counted once per month even if they appear in multiple rows.
+          </span>
+        </span>
+
+        <span style="color:var(--gray-300);">·</span>
+
+        <span class="info-icon" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--gray-600);font-weight:600;width:auto;margin-left:0;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Avg HC (monthly)
+          <span class="info-tip" style="width:260px;">
+            <strong>Average Headcount</strong> — (unique employees at month open + unique employees at month close) ÷ 2. Used as the denominator for the monthly Rate%. Captures both who started and ended the month to smooth out mid-month movement.
+          </span>
+        </span>
+
+        <span style="color:var(--gray-300);">·</span>
+
+        <span class="info-icon" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--gray-600);font-weight:600;width:auto;margin-left:0;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Rate%
+          <span class="info-tip" style="width:240px;">
+            <strong>Monthly Attrition Rate</strong> = Sep ÷ Avg HC × 100. Green &lt;3%, Orange 3–5%, Red &gt;5%. Tells you what percentage of the average headcount separated in that specific month.
+          </span>
+        </span>
+
+        <span style="color:var(--gray-300);">·</span>
+
+        <span class="info-icon" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--gray-600);font-weight:600;width:auto;margin-left:0;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Annualized (monthly)
+          <span class="info-tip" style="width:260px;">
+            <strong>Annualized Monthly Rate</strong> = monthly Rate% × 12. Projects what the annual attrition rate would be if that single month's pace continued all year. Useful for spotting spikes — a 5% month = 60% annualized, which immediately flags urgency.
+          </span>
+        </span>
+
+        <span style="color:var(--gray-300);">·</span>
+
+        <span class="info-icon" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#5000B3;font-weight:600;width:auto;margin-left:0;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Uniq HC (YTD/FY)
+          <span class="info-tip" style="width:280px;">
+            <strong>Unique Headcount</strong> — count of distinct employees (by EMPID) who were Active or New Hire at any point during the YTD or full-year period. Used instead of Avg HC for period summaries because it ensures the numerator (total separations) and denominator (total employees in period) are both cumulative — no mixing of a sum against an average. This is the BPO industry-standard denominator for annual attrition reporting.
+          </span>
+        </span>
+
+        <span style="color:var(--gray-300);">·</span>
+
+        <span class="info-icon" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#5000B3;font-weight:600;width:auto;margin-left:0;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Rate% (YTD/FY)
+          <span class="info-tip" style="width:280px;">
+            <strong>Period Attrition Rate</strong> = Total Separations ÷ Unique HC × 100. Answers: "of everyone who worked here this year, what % left?" Both numerator and denominator cover the same period — no distortion from month-to-month HC fluctuations. Comparable to industry benchmarks.
+          </span>
+        </span>
+
+        <span style="color:var(--gray-300);">·</span>
+
+        <span class="info-icon" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#5000B3;font-weight:600;width:auto;margin-left:0;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Ann% (YTD/FY)
+          <span class="info-tip" style="width:280px;">
+            <strong>Annualized Period Rate</strong> = (Total Sep ÷ Uniq HC) × (12 ÷ months elapsed) × 100. Projects the YTD rate to a full year. For a completed FY this equals the Rate% directly (all 12 months elapsed). For a YTD period it answers: "if attrition continues at this pace, what will the full-year rate be?"
+          </span>
+        </span>
+      </div>
+
       <div class="table-wrapper" id="attr-table-wrapper" style="max-height:calc(100vh - 360px);overflow-y:auto;overflow-x:auto;">
         <div class="state-box"><div style="text-align:center;">
   <div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;height:28px;margin-bottom:12px;">
@@ -658,7 +729,9 @@
         <span class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span><span style="color:#94a3b8">Avg HC</span></span>
         <span class="legend-item"><span class="legend-dot" style="background:var(--black)"></span><span style="color:var(--black)">Attrition Rate</span></span>
       </div>
-      <div style="font-size:11px;color:#94a3b8;background:white;border:1px solid #e4dfd9;border-radius:8px;padding:8px 14px;margin-bottom:10px;line-height:1.7;"><strong>Sep</strong> = number of separations &nbsp;·&nbsp; <strong>Avg HC</strong> = (unique employees at month start + unique employees at month end) ÷ 2 &nbsp;·&nbsp; <strong>Rate %</strong> = Sep ÷ Avg HC × 100 &nbsp;·&nbsp; <strong>Annualized</strong> = monthly Rate × 12</div>
+      <div style="font-size:11px;color:#94a3b8;background:white;border:1px solid #e4dfd9;border-radius:8px;padding:8px 14px;margin-bottom:10px;line-height:1.7;">
+        <strong>Sep</strong> = separations &nbsp;·&nbsp; <strong>Avg HC</strong> = (open + close) ÷ 2 &nbsp;·&nbsp; <strong>Rate%</strong> = Sep ÷ Avg HC × 100 &nbsp;·&nbsp; <strong>Annualized</strong> = Rate × 12 &nbsp;·&nbsp; <strong style="color:#5000B3;">Uniq HC</strong> = distinct active EMPIDs in period &nbsp;·&nbsp; <strong style="color:#5000B3;">YTD/FY Rate%</strong> = Total Sep ÷ Uniq HC × 100 &nbsp;·&nbsp; <strong style="color:#5000B3;">Ann%</strong> = Period Rate × (12 ÷ months)
+      </div>
       <div class="table-wrapper" id="attrmgr-wrapper" style="max-height:calc(100vh - 360px);overflow-y:auto;overflow-x:auto;">
         <div class="state-box"><div style="text-align:center;">
   <div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;height:28px;margin-bottom:12px;">
@@ -4007,7 +4080,7 @@ function renderAttritionTable() {
   const ytdSubBg = 'background:#ede9ff;';
   ytdYears.forEach(yr => {
     th2 += `<th class="sub-attr" style="${ytdSubBg}color:#5000B3;">Sep</th>`;
-    th2 += `<th class="sub-open" style="${ytdSubBg}color:#5000B3;">Avg HC</th>`;
+    th2 += `<th class="sub-open" style="${ytdSubBg}color:#5000B3;">Uniq HC</th>`;
     th2 += `<th class="sub-rate" style="${ytdSubBg}color:#5000B3;">Rate%</th>`;
     th2 += `<th class="sub-rate" style="${ytdSubBg}color:#5000B3;border-right:3px solid #5000B3;">Ann%</th>`;
   });
@@ -4023,7 +4096,7 @@ function renderAttritionTable() {
     if (mIsYrEnd) {
       const fySubBg = 'background:#f0eefa;';
       th2 += `<th class="sub-attr" style="${fySubBg}color:#5000B3;">Sep</th>`;
-      th2 += `<th class="sub-open" style="${fySubBg}color:#5000B3;">Avg HC</th>`;
+      th2 += `<th class="sub-open" style="${fySubBg}color:#5000B3;">Uniq HC</th>`;
       th2 += `<th class="sub-rate" style="${fySubBg}color:#5000B3;">Rate%</th>`;
       th2 += `<th class="sub-rate" style="${fySubBg}color:#5000B3;border-right:3px solid #5000B3;">Ann%</th>`;
     }
@@ -4034,49 +4107,46 @@ function renderAttritionTable() {
     const avg = (open + close) / 2;
     return avg > 0 ? ((sep / avg) * 100).toFixed(1) + '%' : '';
   };
-  // annRate: (total sep / avg of monthly Avg HCs) × (12 / months)
+  // annRate: Rate% × (12 / months elapsed) — annualizes the period rate
   const annRate = (monthData, mList) => {
-    const activeM = mList.filter(m => monthData[m]);
-    if (!activeM.length) return '';
-    let totalSep = 0, avgHCSum = 0;
-    activeM.forEach(m => {
-      const d = monthData[m];
-      totalSep += d.sep || 0;
-      avgHCSum += (d.open + d.active) / 2;
-    });
-    const avgHC = avgHCSum / activeM.length;
-    if (!avgHC) return '';
-    return ((totalSep / avgHC) * (12 / activeM.length) * 100).toFixed(1) + '%';
+    const d = sumMonths(monthData, mList);
+    if (!d.uniqueCount || !d.cnt) return '';
+    const periodRate = d.sep / d.uniqueCount;
+    return (periodRate * (12 / d.cnt) * 100).toFixed(1) + '%';
   };
 
-  // annRateDedup: (total sep / avg monthly Avg HC) × (12 / months)
+  // annRateDedup: same for grand total rows using dedupByYear
   const annRateDedup = (dedupByYear, yr) => {
     const d = dedupByYear[yr];
     if (!d || !d.cnt) return '';
-    const avgHC = (d.open + d.close) / 2; // open=close=avgHC so this returns avgHC
-    if (!avgHC) return '';
-    return ((d.sep / avgHC) * (12 / d.cnt) * 100).toFixed(1) + '%';
+    const uniqueCount = (d.open + d.close) / 2; // open=close=uniqueCount
+    if (!uniqueCount) return '';
+    return ((d.sep / uniqueCount) * (12 / d.cnt) * 100).toFixed(1) + '%';
   };
   const vSep  = n => n ? `<span class="v-attr">-${n}</span>` : '';
   const vAvg  = (open, close) => { const avg=(open+close)/2; return avg>0?`<span class="v-nh">${avg%1===0?avg:avg.toFixed(1)}</span>`:''; };
   const vRate = r => r ? `<span class="v-rate">${r}</span>` : '';
   const vAnn  = r => r ? `<span style="color:#a78bfa;font-weight:700;">${r}</span>` : '';
 
-  // Helper: aggregate monthData over a set of months for a group/dept
-  // Avg HC = average of monthly Avg HCs — most consistent with individual monthly columns
+  // Helper: aggregate monthData over a set of months — Option B
+  // Rate = Total Sep ÷ Total Unique Active Employees in period × 100
+  // Unique Active = distinct EMPIDs that appeared as Active or New Hire in any month
   const sumMonths = (monthData, mList) => {
-    let sep = 0, avgHCSum = 0, cnt = 0;
+    let sep = 0;
+    const uniqueActive = new Set();
     mList.forEach(m => {
       const d = monthData[m];
       if (!d) return;
       sep += d.sep || 0;
-      const mAvg = (d.open + d.active) / 2;
-      avgHCSum += mAvg;
-      cnt++;
+      // Count all employees who were active (open or close) in any month
+      (d.empOpen  ||[]).forEach(e => uniqueActive.add(e.id));
+      (d.empClose ||[]).forEach(e => uniqueActive.add(e.id));
+      (d.empNH    ||[]).forEach(e => uniqueActive.add(e.id));
     });
-    const avgHC = cnt > 0 ? avgHCSum / cnt : 0;
-    // set open=avgHC, active=avgHC so (open+active)/2 = avgHC in rate()
-    return { sep, open: avgHC, active: avgHC, cnt };
+    const uniqueCount = uniqueActive.size;
+    // Use uniqueCount as both open and active so (open+active)/2 = uniqueCount in rate()
+    // and vAvg displays uniqueCount correctly
+    return { sep, open: uniqueCount, active: uniqueCount, cnt: mList.filter(m=>monthData[m]).length, uniqueCount };
   };
 
   // Render YTD cells (current year only — leftmost)
@@ -4179,20 +4249,33 @@ function renderAttritionTable() {
   const dedupTotals = getDeduplicatedMonthlyTotals(filteredData);
 
   // Build dedup totals aggregated by year for YTD/FY grand total cells
+  // Build unique active employee sets per year from filteredData directly
+  // Conservative: any EMPID that was Active or New Hire in any month of the year
+  const uniqueByYear = {};
+  for (const r of filteredData) {
+    const mnyr = (r['Mn/Yr']||'').trim();
+    const s    = (r['Status']||'').trim();
+    const id   = (r['EMPID']||'').trim();
+    if (!mnyr || !id) continue;
+    if (s !== STATUS_ACTIVE && s !== STATUS_NEW_HIRE) continue;
+    const yr = parseMonthYear(mnyr);
+    if (!uniqueByYear[yr]) uniqueByYear[yr] = new Set();
+    uniqueByYear[yr].add(id);
+  }
+
   const dedupByYear = {};
   allYears.forEach(yr => {
     const yMonths = monthsByYear[yr];
-    let sep = 0, avgHCSum = 0, cnt = 0;
+    let sep = 0, cnt = 0;
     yMonths.forEach(m => {
       const dt = dedupTotals[m];
       if (!dt) return;
       sep += dt.sep || 0;
-      avgHCSum += (dt.open + dt.close) / 2;
       cnt++;
     });
-    const avgHC = cnt > 0 ? avgHCSum / cnt : 0;
-    // open=avgHC, close=avgHC so (open+close)/2 = avgHC in rate()
-    dedupByYear[yr] = { sep, open: avgHC, close: avgHC, cnt };
+    const uniqueCount = uniqueByYear[yr]?.size || 0;
+    // open=uniqueCount, close=uniqueCount so (open+close)/2 = uniqueCount in rate()
+    dedupByYear[yr] = { sep, open: uniqueCount, close: uniqueCount, cnt };
   });
 
   tbody += `<tr class="total-row"><td class="col-label">GRAND TOTAL</td>`;
