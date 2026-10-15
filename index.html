@@ -645,9 +645,9 @@
 
         <span class="info-icon" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#5000B3;font-weight:600;width:auto;margin-left:0;">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          Uniq HC (YTD/FY)
+          Avg HC (YTD/FY)
           <span class="info-tip" style="width:280px;">
-            <strong>Unique Headcount</strong> — count of distinct employees (by EMPID) who were Active or New Hire at any point during the YTD or full-year period. Used instead of Avg HC for period summaries because it ensures the numerator (total separations) and denominator (total employees in period) are both cumulative — no mixing of a sum against an average. This is the BPO industry-standard denominator for annual attrition reporting.
+            <strong>Average HC (period)</strong> — average of monthly Avg HCs across the YTD or full-year period. Each monthly Avg HC = (Open + Close) ÷ 2. The period average smooths out month-to-month HC fluctuations and is directly consistent with the individual monthly columns — the same formula, just averaged across months.
           </span>
         </span>
 
@@ -657,7 +657,7 @@
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           Rate% (YTD/FY)
           <span class="info-tip" style="width:280px;">
-            <strong>Period Attrition Rate</strong> = Total Separations ÷ Unique HC × 100. Answers: "of everyone who worked here this year, what % left?" Both numerator and denominator cover the same period — no distortion from month-to-month HC fluctuations. Comparable to industry benchmarks.
+            <strong>Period Attrition Rate</strong> = Total Separations ÷ Avg HC × 100, where Avg HC is the average of monthly Avg HCs. Consistent with the monthly Rate% formula — same numerator/denominator approach, applied across the full period.
           </span>
         </span>
 
@@ -667,7 +667,7 @@
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           Ann% (YTD/FY)
           <span class="info-tip" style="width:280px;">
-            <strong>Annualized Period Rate</strong> = (Total Sep ÷ Uniq HC) × (12 ÷ months elapsed) × 100. Projects the YTD rate to a full year. For a completed FY this equals the Rate% directly (all 12 months elapsed). For a YTD period it answers: "if attrition continues at this pace, what will the full-year rate be?"
+            <strong>Annualized Period Rate</strong> = average of monthly annualized rates (avg of monthly Rate% × 12). Directly mirrors how your team tracks this manually. For a completed FY this is the average of 12 monthly annualized rates. For a YTD period it answers: "if attrition continues at this pace, what will the full-year rate be?" Consistent with the monthly Annualized column.
           </span>
         </span>
       </div>
@@ -4080,7 +4080,7 @@ function renderAttritionTable() {
   const ytdSubBg = 'background:#ede9ff;';
   ytdYears.forEach(yr => {
     th2 += `<th class="sub-attr" style="${ytdSubBg}color:#5000B3;">Sep</th>`;
-    th2 += `<th class="sub-open" style="${ytdSubBg}color:#5000B3;">Uniq HC</th>`;
+    th2 += `<th class="sub-open" style="${ytdSubBg}color:#5000B3;">Avg HC</th>`;
     th2 += `<th class="sub-rate" style="${ytdSubBg}color:#5000B3;">Rate%</th>`;
     th2 += `<th class="sub-rate" style="${ytdSubBg}color:#5000B3;border-right:3px solid #5000B3;">Ann%</th>`;
   });
@@ -4096,7 +4096,7 @@ function renderAttritionTable() {
     if (mIsYrEnd) {
       const fySubBg = 'background:#f0eefa;';
       th2 += `<th class="sub-attr" style="${fySubBg}color:#5000B3;">Sep</th>`;
-      th2 += `<th class="sub-open" style="${fySubBg}color:#5000B3;">Uniq HC</th>`;
+      th2 += `<th class="sub-open" style="${fySubBg}color:#5000B3;">Avg HC</th>`;
       th2 += `<th class="sub-rate" style="${fySubBg}color:#5000B3;">Rate%</th>`;
       th2 += `<th class="sub-rate" style="${fySubBg}color:#5000B3;border-right:3px solid #5000B3;">Ann%</th>`;
     }
@@ -4107,49 +4107,45 @@ function renderAttritionTable() {
     const avg = (open + close) / 2;
     return avg > 0 ? ((sep / avg) * 100).toFixed(1) + '%' : '';
   };
-  // annRate: Rate% × (12 / months elapsed) — annualizes the period rate
+  // annRate: average of monthly annualized rates — pre-computed in sumMonths
   const annRate = (monthData, mList) => {
     const d = sumMonths(monthData, mList);
-    if (!d.uniqueCount || !d.cnt) return '';
-    const periodRate = d.sep / d.uniqueCount;
-    return (periodRate * (12 / d.cnt) * 100).toFixed(1) + '%';
+    if (!d.cnt) return '';
+    return d.avgAnn > 0 ? d.avgAnn.toFixed(1) + '%' : '';
   };
 
-  // annRateDedup: same for grand total rows using dedupByYear
+  // annRateDedup: average of monthly annualized rates for grand total rows
   const annRateDedup = (dedupByYear, yr) => {
     const d = dedupByYear[yr];
     if (!d || !d.cnt) return '';
-    const uniqueCount = (d.open + d.close) / 2; // open=close=uniqueCount
-    if (!uniqueCount) return '';
-    return ((d.sep / uniqueCount) * (12 / d.cnt) * 100).toFixed(1) + '%';
+    return d.avgAnn > 0 ? d.avgAnn.toFixed(1) + '%' : '';
   };
   const vSep  = n => n ? `<span class="v-attr">-${n}</span>` : '';
   const vAvg  = (open, close) => { const avg=(open+close)/2; return avg>0?`<span class="v-nh">${avg%1===0?avg:avg.toFixed(1)}</span>`:''; };
   const vRate = r => r ? `<span class="v-rate">${r}</span>` : '';
   const vAnn  = r => r ? `<span style="color:#a78bfa;font-weight:700;">${r}</span>` : '';
 
-  // Helper: aggregate monthData over a set of months — Option B
-  // Rate = Total Sep ÷ Total Unique Active Employees in period × 100
-  // Unique Active = distinct EMPIDs that appeared as Active or New Hire in any month
+  // Helper: aggregate monthData over a set of months
+  // HC      = average of monthly Avg HC  → (sum of (open+active)/2) ÷ months with data
+  // Sep     = total separations across all months
+  // Rate%   = Sep ÷ HC × 100
+  // Ann%    = average of monthly annualized rates (avg of monthly Rate% × 12)
   const sumMonths = (monthData, mList) => {
-    let sep = 0;
-    const uniqueActive = new Set();
+    let sep = 0, avgHCSum = 0, annSum = 0, cnt = 0;
     mList.forEach(m => {
       const d = monthData[m];
       if (!d) return;
       sep += d.sep || 0;
-      // Use activeIds Set if available (attrition table)
-      if (d.activeIds instanceof Set) {
-        d.activeIds.forEach(id => uniqueActive.add(id));
-      } else {
-        // Fallback: use empOpen/empClose/empNH arrays (headcount matrix)
-        (d.empOpen  ||[]).forEach(e => uniqueActive.add(e.id));
-        (d.empClose ||[]).forEach(e => uniqueActive.add(e.id));
-        (d.empNH    ||[]).forEach(e => uniqueActive.add(e.id));
-      }
+      const mAvgHC = (d.open + d.active) / 2;
+      const mRate  = mAvgHC > 0 ? d.sep / mAvgHC : 0;
+      avgHCSum += mAvgHC;
+      annSum   += mRate * 12 * 100;
+      cnt++;
     });
-    const uniqueCount = uniqueActive.size;
-    return { sep, open: uniqueCount, active: uniqueCount, cnt: mList.filter(m=>monthData[m]).length, uniqueCount };
+    const avgHC  = cnt > 0 ? avgHCSum / cnt : 0;
+    const avgAnn = cnt > 0 ? annSum / cnt : 0;
+    // open=avgHC, active=avgHC so (open+active)/2 = avgHC in rate()
+    return { sep, open: avgHC, active: avgHC, cnt, avgAnn };
   };
 
   // Render YTD cells (current year only — leftmost)
@@ -4252,33 +4248,24 @@ function renderAttritionTable() {
   const dedupTotals = getDeduplicatedMonthlyTotals(filteredData);
 
   // Build dedup totals aggregated by year for YTD/FY grand total cells
-  // Build unique active employee sets per year from filteredData directly
-  // Conservative: any EMPID that was Active or New Hire in any month of the year
-  const uniqueByYear = {};
-  for (const r of filteredData) {
-    const mnyr = (r['Mn/Yr']||'').trim();
-    const s    = (r['Status']||'').trim();
-    const id   = (r['EMPID']||'').trim();
-    if (!mnyr || !id) continue;
-    if (s !== STATUS_ACTIVE && s !== STATUS_NEW_HIRE) continue;
-    const yr = parseMonthYear(mnyr);
-    if (!uniqueByYear[yr]) uniqueByYear[yr] = new Set();
-    uniqueByYear[yr].add(id);
-  }
-
   const dedupByYear = {};
   allYears.forEach(yr => {
     const yMonths = monthsByYear[yr];
-    let sep = 0, cnt = 0;
+    let sep = 0, avgHCSum = 0, annSum = 0, cnt = 0;
     yMonths.forEach(m => {
       const dt = dedupTotals[m];
       if (!dt) return;
       sep += dt.sep || 0;
+      const mAvgHC = (dt.open + dt.close) / 2;
+      const mRate  = mAvgHC > 0 ? dt.sep / mAvgHC : 0;
+      avgHCSum += mAvgHC;
+      annSum   += mRate * 12 * 100;
       cnt++;
     });
-    const uniqueCount = uniqueByYear[yr]?.size || 0;
-    // open=uniqueCount, close=uniqueCount so (open+close)/2 = uniqueCount in rate()
-    dedupByYear[yr] = { sep, open: uniqueCount, close: uniqueCount, cnt };
+    const avgHC  = cnt > 0 ? avgHCSum / cnt : 0;
+    const avgAnn = cnt > 0 ? annSum / cnt : 0;
+    // open=avgHC, close=avgHC so (open+close)/2 = avgHC in rate()
+    dedupByYear[yr] = { sep, open: avgHC, close: avgHC, cnt, avgAnn };
   });
 
   tbody += `<tr class="total-row"><td class="col-label">GRAND TOTAL</td>`;
